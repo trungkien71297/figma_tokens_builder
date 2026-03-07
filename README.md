@@ -1,6 +1,18 @@
 # Figma Tokens Builder
 
-A `build_runner` builder that reads **Figma token JSON files** (W3C format) and generates type-safe Dart `ThemeExtension` classes with mode presets.
+A `build_runner` code generator that converts **Figma Variable** exports into type-safe Dart `ThemeExtension` classes — bridging the gap between design and code.
+
+## Why Figma Variables?
+
+[Figma Variables](https://help.figma.com/hc/en-us/articles/15339657135383-Guide-to-variables-in-Figma) provide a **single source of truth** for design dimensions (spacing, sizing, radii, etc.) that both designers and developers follow. Instead of hardcoding pixel values across your codebase, you reference variables that automatically adapt to different device contexts.
+
+**How it works in practice:**
+
+1. **Designers** define variables in Figma with **modes** (e.g. Mobile, Tablet, Desktop) — each mode specifies different values for the same token (e.g. `card-padding` = 16px on Mobile, 24px on Tablet).
+2. When combined with **Auto Layout**, Figma designs automatically stretch and reflow to match each mode — meaning a single design file covers phone, tablet, and desktop without creating separate mockups.
+3. **This builder** takes those exported variables and generates Dart code that mirrors the same structure — so your Flutter app uses the exact same tokens and modes as the Figma design.
+
+**The result:** Designers update a variable in Figma → you re-export and rebuild → your app automatically reflects the new values. No hardcoded numbers, no design-code drift, no manual breakpoint management.
 
 ## Features
 
