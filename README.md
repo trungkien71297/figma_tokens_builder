@@ -47,7 +47,7 @@ targets:
 | ------------ | --------------- | -------------------------------------- |
 | `input_dir`  | `assets/figma`  | Directory containing token JSON files  |
 | `output_dir` | `lib/generated` | Directory for generated `.g.dart` file |
-| `base_class` | `AppSpacing`    | Base name for generated classes        |
+| `base_class` | `Figma`    | Base name for generated classes        |
 
 ### 3. Place token files
 

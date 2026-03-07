@@ -32,7 +32,7 @@ class FigmaTokenBuilder implements Builder {
   String get _outputDir =>
       options.config['output_dir'] as String? ?? 'lib/generated';
   String get _baseClass =>
-      options.config['base_class'] as String? ?? 'AppSpacing';
+      options.config['base_class'] as String? ?? 'Figma';
 
   @override
   Map<String, List<String>> get buildExtensions {
