@@ -1,0 +1,13 @@
+builders:
+  figma_token_builder:
+    import: "package:figma_tokens_builder/figma_tokens_builder.dart"
+    builder_factories: ["figmaTokenBuilder"]
+    build_extensions: {"$lib$": ["generated/appspacing.g.dart"]}
+    auto_apply: dependents
+    build_to: source
+    applies_builders: []
+    defaults:
+      options:
+        input_dir: "assets/figma"
+        output_dir: "lib/generated"
+        base_class: "AppSpacing"

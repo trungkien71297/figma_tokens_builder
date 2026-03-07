@@ -1,0 +1,13 @@
+name: figma_tokens_builder
+description: "A build_runner builder that generates Dart ThemeExtension classes from Figma token JSON files."
+version: 0.0.1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  build: ^2.4.0
+  glob: ^2.1.0
+
+dev_dependencies:
+  test: ^1.24.0
