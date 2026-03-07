@@ -1,5 +1,9 @@
 # Figma Tokens Builder
 
+[![pub package](https://img.shields.io/pub/v/figma_tokens_builder.svg)](https://pub.dev/packages/figma_tokens_builder)
+[![pub points](https://img.shields.io/pub/points/figma_tokens_builder)](https://pub.dev/packages/figma_tokens_builder/score)
+[![license](https://img.shields.io/github/license/hautvfami/figma_tokens_builder)](https://github.com/hautvfami/figma_tokens_builder/blob/main/LICENSE)
+
 A `build_runner` code generator that converts **Figma Variable** exports into type-safe Dart `ThemeExtension` classes — bridging the gap between design and code.
 
 ## Why Figma Variables?
@@ -38,8 +42,7 @@ In your **main project's** `pubspec.yaml`:
 ```yaml
 dev_dependencies:
   build_runner: ^2.4.0
-  figma_tokens_builder:
-    path: figma_tokens_builder
+  figma_tokens_builder: ^0.0.3
 ```
 
 ### 2. Configure `build.yaml`
