@@ -1,0 +1,8 @@
+targets:
+  $default:
+    builders:
+      figma_tokens_builder|figma_token_builder:
+        options:
+          input_dir: "assets/figma"
+          output_dir: "lib/resources"
+          base_class: "Figma"

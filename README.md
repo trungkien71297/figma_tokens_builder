@@ -1,15 +1,16 @@
 # Figma Tokens Builder
 
-A `build_runner` builder that reads **Figma token JSON files** and generates type-safe Dart `ThemeExtension` classes with mode presets (Mobile, Tablet, Web, …).
+A `build_runner` builder that reads **Figma token JSON files** (W3C format) and generates type-safe Dart `ThemeExtension` classes with mode presets.
 
 ## Features
 
-- 🎨 Auto-generates `ThemeExtension` classes from Figma Design Tokens (W3C format)
-- 📱 Static presets for each mode (`mobile`, `tablet`, `web`, …)
-- 📦 Multi-collection support — organize tokens by type (spacing, colors, typography, …)
-- 🔧 Single-group flattening — skip unnecessary nesting when a collection has only one group
-- 🧩 `BuildContext` extensions — `context.spacing.cardPadding`
-- 🏗️ Namespace accessor — `Figma.spacing.mobile.cardPadding`
+- 🎨 Auto-generates `ThemeExtension` classes from Figma Design Tokens
+- 📱 Static presets for each mode (`mobile`, `tablet`, `desktop`, …)
+- 📦 Multi-collection support — organize tokens by type (`Spacing/`, `Avata/`, `Icon/`, …)
+- 🔧 Flat token detection — tokens with `$type`/`$value` are placed directly on the class
+- 🧩 `BuildContext` extensions — `context.spacing.spaceBlock`
+- 🏗️ Namespace accessor — `Figma.spacing.mobile.spaceBlock`
+- 🚀 Mode getters — `Figma.mobile` returns all collections at once
 - ♻️ Includes `copyWith`, `lerp`, `hashCode`, `operator ==` boilerplate
 
 ---
@@ -24,7 +25,7 @@ In your **main project's** `pubspec.yaml`:
 dev_dependencies:
   build_runner: ^2.4.0
   figma_tokens_builder:
-    path: figma_tokens_builder  # or publish to pub.dev
+    path: figma_tokens_builder
 ```
 
 ### 2. Configure `build.yaml`
@@ -50,7 +51,28 @@ targets:
 
 ### 3. Place token files
 
-Export tokens from Figma using the **Design Tokens plugin** (W3C format).
+Export tokens from Figma using the **Variables** export (W3C format), placing each collection in a subdirectory:
+
+```
+assets/figma/
+  ├── Avata/
+  │   ├── Desktop.tokens.json
+  │   ├── Mobile.tokens.json
+  │   └── Tablet.tokens.json
+  ├── Icon/
+  │   ├── Desktop.tokens.json
+  │   ├── Mobile.tokens.json
+  │   └── Tablet.tokens.json
+  ├── Image/
+  │   ├── Mobile.tokens.json
+  │   └── Tablet.tokens.json
+  └── Spacing/
+      ├── Desktop.tokens.json
+      ├── Mobile.tokens.json
+      └── Tablet.tokens.json
+```
+
+> Directory names are auto-converted to PascalCase for class names: `Spacing/` → `FigmaSpacing`
 
 ### 4. Run build_runner
 
@@ -63,61 +85,25 @@ Example: `lib/resources/figma.g.dart`
 
 ---
 
-## Directory Structure
-
-The builder supports two layouts:
-
-### Flat (single collection)
-
-```
-assets/figma/
-  ├── Mobile.tokens.json
-  ├── Tablet.tokens.json
-  └── Web.tokens.json
-```
-
-Generates a **single** `ThemeExtension` class named `{base_class}` (e.g. `Figma`).
-
-### Multi-collection (subdirectories)
-
-```
-assets/figma/
-  ├── spacing/
-  │   ├── Mobile.tokens.json
-  │   ├── Tablet.tokens.json
-  │   └── Web.tokens.json
-  └── colors/
-      ├── Mobile.tokens.json
-      ├── Tablet.tokens.json
-      └── Web.tokens.json
-```
-
-Generates:
-- `FigmaSpacing` — ThemeExtension for spacing tokens
-- `FigmaColors` — ThemeExtension for color tokens
-- `Figma` — top-level namespace accessor class
-- `BuildContext` extensions for each collection
-
-> **Class naming:** `{base_class}` + `{directory_name_in_PascalCase}`  
-> Example: base_class `Figma` + directory `spacing` → `FigmaSpacing`
-
----
-
 ## Token JSON Format
 
-The builder expects the **W3C Design Tokens** format exported by Figma:
+The builder supports two token formats:
+
+### Flat tokens (recommended)
+
+Tokens directly at the root level — each with `$type` and `$value`:
 
 ```json
 {
-  "GroupName": {
-    "token-name": {
-      "$type": "number",
-      "$value": 16
-    },
-    "another-token": {
-      "$type": "number",
-      "$value": 24
-    }
+  "space-inline-tight": {
+    "$type": "number",
+    "$value": 4,
+    "$extensions": { ... }
+  },
+  "space-inline": {
+    "$type": "number",
+    "$value": 8,
+    "$extensions": { ... }
   },
   "$extensions": {
     "com.figma.modeName": "Mobile"
@@ -125,43 +111,46 @@ The builder expects the **W3C Design Tokens** format exported by Figma:
 }
 ```
 
-- **Groups** — top-level keys (e.g. `"Semantic"`) become sub-group classes (or flattened if only one)
-- **Tokens** — keys within a group (e.g. `"card-padding"`) become `camelCase` properties
-- **Mode name** — detected from `$extensions.com.figma.modeName` or falls back to filename
+→ Generates properties directly on the class: `FigmaSpacing.mobile.spaceInlineTight`
+
+### Grouped tokens
+
+Tokens nested inside groups (maps without `$type`):
+
+```json
+{
+  "Size": {
+    "image-thumbnail": { "$type": "number", "$value": 64 },
+    "image-card":      { "$type": "number", "$value": 128 }
+  },
+  "Ratio": {
+    "ratio-square":    { "$type": "number", "$value": 1.0 },
+    "ratio-portrait":  { "$type": "number", "$value": 0.75 }
+  },
+  "$extensions": { "com.figma.modeName": "Mobile" }
+}
+```
+
+→ Generates sub-group classes: `FigmaImage.mobile.size.imageThumbnail`
+
+> **Mode name** is detected from `$extensions.com.figma.modeName`, or falls back to filename.
 
 ---
 
-## Generated Code & Usage
+## Generated Classes
 
-### Single-group collection (flattened)
+For the directory structure above, the builder generates:
 
-When a collection has **one group**, tokens are placed directly on the class:
+| Collection | Class          | Type                  | Modes                   |
+| ---------- | -------------- | --------------------- | ----------------------- |
+| `Avata/`   | `FigmaAvata`   | flat tokens           | desktop, mobile, tablet |
+| `Icon/`    | `FigmaIcon`    | flat tokens           | desktop, mobile, tablet |
+| `Image/`   | `FigmaImage`   | grouped (Size, Ratio) | mobile, tablet          |
+| `Spacing/` | `FigmaSpacing` | flat tokens           | desktop, mobile, tablet |
 
-```dart
-class FigmaSpacing extends ThemeExtension<FigmaSpacing> {
-  final double componentGapTight;
-  final double cardPadding;
-  // ...
-
-  static const mobile = FigmaSpacing(componentGapTight: 4.0, cardPadding: 16.0, ...);
-  static const tablet = FigmaSpacing(componentGapTight: 8.0, cardPadding: 24.0, ...);
-  static const web    = FigmaSpacing(componentGapTight: 8.0, cardPadding: 24.0, ...);
-}
-```
-
-### Multi-group collection (nested)
-
-When a collection has **multiple groups**, each group becomes a sub-class:
-
-```dart
-class FigmaSpacing extends ThemeExtension<FigmaSpacing> {
-  final _FigmaSpacing_SemanticGroup semantic;
-  final _FigmaSpacing_PrimitiveGroup primitive;
-  // ...
-}
-```
-
-Access: `FigmaSpacing.mobile.semantic.cardPadding`
+Plus:
+- `Figma` — top-level namespace accessor with mode getters
+- `BuildContext` extensions for each collection
 
 ---
 
@@ -169,16 +158,16 @@ Access: `FigmaSpacing.mobile.semantic.cardPadding`
 
 ### 1. Namespace accessor (no context needed)
 
-Directly access static presets without `BuildContext`:
+Directly access static presets — no `BuildContext` required:
 
 ```dart
-// Access via top-level Figma class
-Figma.spacing.mobile.cardPadding      // → 16.0
-Figma.spacing.tablet.cardPadding      // → 24.0
-Figma.spacing.web.cardGap             // → 32.0
+Figma.spacing.mobile.spaceInlineTight   // → 4.0
+Figma.spacing.tablet.spaceComponentMd   // → 32.0
+Figma.avata.mobile.avataCompact         // → 32.0
+Figma.icon.desktop.icoDefault           // → 24.0
 
-// Or directly via the ThemeExtension class
-FigmaSpacing.mobile.cardPadding       // → 16.0
+// Or directly via the class
+FigmaSpacing.mobile.spaceBlock          // → 16.0
 ```
 
 **Use when:** You want a specific mode's value and don't need dynamic theming.
@@ -188,22 +177,24 @@ FigmaSpacing.mobile.cardPadding       // → 16.0
 Access the `ThemeExtension` registered in the current `ThemeData`:
 
 ```dart
-Figma.spacing.of(context).cardPadding
+Figma.spacing.of(context).spaceBlock
+Figma.avata.of(context).avataCompact
 ```
 
-**Use when:** You've registered a preset in `ThemeData` and want the currently active values.
+**Use when:** You've registered extensions in `ThemeData` and want the active mode's values.
 
 ### 3. BuildContext extension (shortest syntax)
 
 ```dart
-context.spacing.cardPadding
+context.spacing.spaceBlock
+context.avata.avataCompact
+context.icon.icoDefault
+context.image.size.imageThumbnail
 ```
 
-Equivalent to `FigmaSpacing.of(context).cardPadding`.
+**Use when:** Same as #2, but you prefer the shortest syntax.
 
-**Use when:** Same as #2, but you prefer shorter syntax.
-
-> ⚠️ **Methods 2 & 3** require registering the extension in `ThemeData` (see below).
+> ⚠️ **Methods 2 & 3** require registering extensions in `ThemeData` (see below).
 
 ---
 
@@ -211,28 +202,17 @@ Equivalent to `FigmaSpacing.of(context).cardPadding`.
 
 ### Basic setup
 
-Register all collections at once using mode getters:
+Register all collections at once using `Figma.{mode}`:
 
 ```dart
 MaterialApp(
   theme: ThemeData(
-    extensions: Figma.mobile,  // all collections for mobile mode!
+    extensions: Figma.mobile,
   ),
 );
 ```
 
-Or register individual collections:
-
-```dart
-MaterialApp(
-  theme: ThemeData(
-    extensions: [
-      FigmaSpacing.mobile,
-      // FigmaColors.mobile,
-    ],
-  ),
-);
-```
+`Figma.mobile` returns `[FigmaAvata.mobile, FigmaIcon.mobile, FigmaImage.mobile, FigmaSpacing.mobile]` — no need to list each collection manually.
 
 ### Responsive setup (auto-switch by screen size)
 
@@ -241,33 +221,38 @@ MaterialApp(
   builder: (context, child) {
     final width = MediaQuery.of(context).size.width;
     final extensions = width > 1024
-        ? Figma.web
+        ? Figma.desktop
         : width > 600
             ? Figma.tablet
             : Figma.mobile;
 
     return Theme(
-      data: Theme.of(context).copyWith(extensions: extensions),
+      data: Theme.of(context).copyWith(extensions: [...extensions]),
       child: child!,
     );
   },
+  theme: ThemeData(
+    // other theme properties...
+  ),
 );
 ```
 
-Now all widgets simply use `context.spacing.cardPadding` — the correct mode is selected automatically.
+Now all widgets simply use `context.spacing.spaceBlock` — the correct mode values are applied automatically based on screen width.
+
+> **Note:** When adding new collections, `Figma.mobile` / `Figma.tablet` / `Figma.desktop` auto-include them. No code changes needed.
 
 ---
 
 ## Full Example
 
-### Token file: `assets/figma/spacing/Mobile.tokens.json`
+### Token file: `assets/figma/Spacing/Mobile.tokens.json`
 
 ```json
 {
-  "Semantic": {
-    "card-padding": { "$type": "number", "$value": 16 },
-    "card-gap":     { "$type": "number", "$value": 16 }
-  },
+  "space-inline-tight": { "$type": "number", "$value": 4,  "$extensions": { ... } },
+  "space-inline":       { "$type": "number", "$value": 8,  "$extensions": { ... } },
+  "space-component-sm": { "$type": "number", "$value": 16, "$extensions": { ... } },
+  "space-block":        { "$type": "number", "$value": 16, "$extensions": { ... } },
   "$extensions": { "com.figma.modeName": "Mobile" }
 }
 ```
@@ -290,17 +275,28 @@ targets:
 ```dart
 import 'package:your_app/resources/figma.g.dart';
 
-class MyWidget extends StatelessWidget {
+class MyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      // Option A: static preset
-      padding: EdgeInsets.all(Figma.spacing.mobile.cardPadding),
+    return Container(
+      // Static preset (no context needed)
+      margin: EdgeInsets.all(Figma.spacing.mobile.spaceBlock),
 
-      // Option B: from ThemeData (requires registration)
-      // padding: EdgeInsets.all(context.spacing.cardPadding),
+      // Dynamic from ThemeData (responsive)
+      padding: EdgeInsets.symmetric(
+        horizontal: context.spacing.spaceComponentSm,
+        vertical: context.spacing.spaceInlineTight,
+      ),
 
-      child: Text('Hello'),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: context.avata.avataCompact / 2,
+          ),
+          SizedBox(width: context.spacing.spaceInline),
+          Text('Hello World'),
+        ],
+      ),
     );
   }
 }
@@ -322,8 +318,12 @@ dart run build_runner build --delete-conflicting-outputs
 
 ### `No token files found`
 - Verify JSON files are in `input_dir` with the `.tokens.json` extension
-- For multi-collection, files must be in **subdirectories** (e.g. `assets/figma/spacing/*.tokens.json`)
+- For multi-collection, files must be in **subdirectories** (e.g. `assets/figma/Spacing/*.tokens.json`)
 
 ### Builder not detected
 - Ensure `figma_tokens_builder` is in `dev_dependencies`
 - Run `dart pub get` or `flutter pub get` after adding the dependency
+
+### Empty generated classes
+- Ensure tokens have `"$type"` and `"$value"` fields
+- Keys starting with `$` are treated as metadata and skipped
