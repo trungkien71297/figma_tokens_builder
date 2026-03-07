@@ -4,6 +4,8 @@ A `build_runner` code generator that converts **Figma Variable** exports into ty
 
 ## Why Figma Variables?
 
+![Figma Variables with modes](https://github.com/hautvfami/figma_tokens_builder/blob/main/example/assets/images/figma_variable.png?raw=true)
+
 [Figma Variables](https://help.figma.com/hc/en-us/articles/15339657135383-Guide-to-variables-in-Figma) provide a **single source of truth** for design dimensions (spacing, sizing, radii, etc.) that both designers and developers follow. Instead of hardcoding pixel values across your codebase, you reference variables that automatically adapt to different device contexts.
 
 **How it works in practice:**
