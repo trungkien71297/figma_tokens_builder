@@ -237,14 +237,14 @@ MaterialApp(
 MaterialApp(
   builder: (context, child) {
     final width = MediaQuery.of(context).size.width;
-    final extensions = width > 1024
-        ? Figma.desktop
-        : width > 600
-            ? Figma.tablet
-            : Figma.mobile;
+    final extensions = switch (width) {
+      > 1024 => Figma.desktop,
+      > 600 => Figma.tablet,
+      _ => Figma.mobile,
+    };
 
     return Theme(
-      data: Theme.of(context).copyWith(extensions: [...extensions]),
+      data: ThemeData(extensions: extensions),
       child: child!,
     );
   },
